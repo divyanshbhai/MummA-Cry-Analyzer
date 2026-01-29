@@ -37,7 +37,8 @@
             flex: 1;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            padding-bottom: 240px; 
+            /* Increased padding to 320px to ensure full visibility behind the FAB and Nav */
+            padding-bottom: 320px; 
         }
 
         .bottom-nav {
@@ -212,7 +213,8 @@
                 <p class="text-slate-400 text-xs leading-relaxed max-w-[200px] mx-auto">Place your device near the baby and tap the center button to start.</p>
             </div>
             
-            <div class="h-10"></div>
+            <!-- Increased spacer at the end of the scroll area -->
+            <div class="h-32"></div>
         </div>
 
         <div id="screen-insights" class="screen space-y-4">
@@ -231,7 +233,7 @@
                     <p class="text-xs text-rose-700 leading-relaxed">Lower abdomen tightness. High-pitched, urgent vocalizations that sound forced from the core.</p>
                 </div>
             </div>
-            <div class="h-20"></div>
+            <div class="h-32"></div>
         </div>
 
     </main>
@@ -488,7 +490,8 @@
             setTimeout(() => {
                 const bars = barsContainer.querySelectorAll('.bar-anim');
                 bars.forEach((b, i) => b.style.width = percentages[i] + "%");
-                resultCard.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                // Scroll target adjusted to ensure the card isn't obscured by the FAB
+                resultCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }, 50);
 
             const options = aiEngine[reason];
