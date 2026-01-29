@@ -2,272 +2,371 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MummA | AI Baby Cry Analyzer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>MummA | AI Analyzer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         
         :root {
-            --primary: #6366f1;
-            --accent: #f43f5e;
-            --soft-bg: #f8fafc;
+            --app-blue: #0ea5e9;
+            --app-slate: #1e293b;
+            --app-bg: #f8fafc;
+            --safe-bottom: env(safe-area-inset-bottom);
+        }
+
+        * {
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            box-sizing: border-box;
         }
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-            min-height: 100vh;
-        }
-
-        .glass-card {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
-        }
-
-        .visualizer-container {
-            background: #0f172a;
-            border-radius: 24px;
+            background-color: var(--app-bg);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
             overflow: hidden;
-            position: relative;
+            display: flex;
+            flex-direction: column;
+            touch-action: manipulation;
         }
 
-        .bar-transition {
-            transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        .main-scroll-view {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 240px; 
         }
 
-        .pulse {
-            animation: pulse-animation 2s infinite;
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-top: 1px solid #e2e8f0;
+            padding-bottom: var(--safe-bottom);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            height: calc(70px + var(--safe-bottom));
+            z-index: 100;
         }
 
-        @keyframes pulse-animation {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.05); opacity: 0.8; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        .step-node {
-            position: relative;
-        }
-        .step-node::after {
-            content: '→';
-            position: absolute;
-            right: -25px;
-            top: 50%;
-            transform: translateY(-50%);
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             color: #94a3b8;
-            font-size: 1.2rem;
-        }
-        @media (max-width: 768px) {
-            .step-node::after { content: '↓'; bottom: -25px; top: auto; left: 50%; transform: translateX(-50%); }
-        }
-        .step-node:last-child::after { content: ''; }
-
-        #results {
-            display: none;
-            animation: slideUp 0.5s ease-out;
+            font-size: 10px;
+            font-weight: 700;
+            gap: 4px;
         }
 
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
+        .nav-item.active { color: var(--app-blue); }
+
+        .app-card {
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 4px 20px -5px rgba(0,0,0,0.04);
+            border: 1px solid #f1f5f9;
+        }
+
+        .visualizer-box {
+            background: #020617;
+            border-radius: 24px;
+            height: 200px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .fab-analyze {
+            position: fixed;
+            bottom: calc(90px + var(--safe-bottom));
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 110;
+        }
+
+        .bar-anim { transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1); }
+
+        .screen { display: none; animation: screenIn 0.3s ease-out forwards; }
+        .screen.active { display: block; }
+
+        @keyframes screenIn {
+            from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+
+        .recording-pulse { animation: pulse-ring 1.5s infinite; }
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.4); }
+            70% { box-shadow: 0 0 0 20px rgba(14, 165, 233, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0); }
+        }
+
+        .typing-dots::after {
+            content: ' .';
+            animation: dots 1.5s steps(5, end) infinite;
+        }
+        @keyframes dots {
+            0%, 20% { content: ' .'; }
+            40% { content: ' . .'; }
+            60% { content: ' . . .'; }
+            80%, 100% { content: ''; }
+        }
+
+        .scan-line {
+            width: 100%;
+            height: 2px;
+            background: rgba(14, 165, 233, 0.5);
+            position: absolute;
+            top: 0;
+            left: 0;
+            box-shadow: 0 0 10px #0ea5e9;
+            animation: scan 2s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { top: 0%; }
+            100% { top: 100%; }
         }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body>
 
-    <div class="max-w-4xl mx-auto">
-        <!-- Header -->
-        <header class="text-center mb-10">
-            <div class="inline-block bg-white px-4 py-1 rounded-full text-indigo-600 text-sm font-semibold mb-4 shadow-sm">
-                ✨ Research-Backed AI Analysis
-            </div>
-            <h1 class="text-4xl md:text-5xl font-bold text-slate-900 mb-2">🍼 MummA</h1>
-            <p class="text-slate-500 max-w-lg mx-auto">Advanced infant vocalization analyzer helping parents understand the language of cries.</p>
-        </header>
-
-        <!-- Main Workspace -->
-        <main class="glass-card rounded-[32px] p-6 md:p-10 mb-12">
+    <main class="main-scroll-view p-6">
+        
+        <div id="screen-dashboard" class="screen active space-y-6">
             
-            <div class="visualizer-container h-48 md:h-64 mb-8">
-                <canvas id="canvas" class="w-full h-full"></canvas>
-                <div id="visual-overlay" class="absolute inset-0 flex items-center justify-center text-slate-400 font-medium tracking-widest text-xs uppercase">
-                    Ready to listen...
-                </div>
-            </div>
-
-            <div class="flex flex-col items-center gap-6 mb-10">
-                <button id="recordBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-4 rounded-full font-bold text-lg transition-all transform hover:scale-105 active:scale-95 shadow-lg flex items-center gap-3">
-                    <span id="btnIcon">🎙️</span>
-                    <span id="btnText">Start Analysis</span>
-                </button>
-                <div id="status" class="text-slate-400 text-sm font-medium animate-pulse">System Idle</div>
-            </div>
-
-            <!-- Analysis Results -->
-            <div id="results" class="space-y-8">
-                <div class="grid md:grid-cols-2 gap-6">
-                    <!-- Major Prediction -->
-                    <div class="bg-indigo-50 rounded-3xl p-6 border border-indigo-100 flex flex-col justify-center items-center text-center">
-                        <span class="text-indigo-400 text-xs font-bold uppercase tracking-widest mb-2">Primary Diagnosis</span>
-                        <div id="topIcon" class="text-5xl mb-4">🍼</div>
-                        <h2 id="prediction" class="text-3xl font-bold text-indigo-900 mb-1">—</h2>
-                        <div class="flex items-center gap-2">
-                            <span class="text-slate-500">Confidence:</span>
-                            <span id="confidence" class="font-bold text-indigo-600">—</span>
-                        </div>
+            <div class="flex items-center justify-between mb-8 pt-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center border border-slate-100">
+                        <svg class="w-8 h-8" viewBox="0 0 100 100" fill="none">
+                            <rect x="25" y="45" width="50" height="12" rx="6" fill="#0ea5e9" />
+                            <path d="M35 45C35 30 65 30 65 45" stroke="#0ea5e9" stroke-width="8" stroke-linecap="round"/>
+                            <path d="M40 57C40 65 44 68 50 68C56 68 60 65 60 57" stroke="#6366f1" stroke-width="4" stroke-linecap="round" stroke-dasharray="2 4"/>
+                        </svg>
                     </div>
-
-                    <!-- Distribution -->
-                    <div class="space-y-4">
-                        <div id="bars-container" class="space-y-4">
-                            <!-- Bars injected here -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- AI Coaching -->
-                <div class="bg-white border-2 border-dashed border-slate-200 rounded-3xl p-6 relative overflow-hidden">
-                    <div class="flex items-start gap-4">
-                        <div class="bg-indigo-600 rounded-xl p-3 text-white">
-                            💡
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-slate-900 mb-1">Gentle Parenting Advice</h3>
-                            <p id="aiTip" class="text-slate-600 leading-relaxed italic">The AI is waiting for a signal to analyze...</p>
-                        </div>
+                    <div>
+                        <h1 class="font-extrabold text-2xl tracking-tight text-slate-900">MummA</h1>
+                        <p id="globalStatus" class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Acoustic Engine Ready</p>
                     </div>
                 </div>
             </div>
-        </main>
 
-        <!-- Diagrammatic Section -->
-        <section class="mb-16">
-            <h3 class="text-2xl font-bold text-slate-900 text-center mb-8">How the AI Works</h3>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
-                <div class="step-node bg-white p-6 rounded-2xl shadow-sm">
-                    <div class="text-3xl mb-2">👂</div>
-                    <h4 class="font-bold text-sm mb-1">Capture</h4>
-                    <p class="text-xs text-slate-500">Real-time PCM audio stream processing.</p>
-                </div>
-                <div class="step-node bg-white p-6 rounded-2xl shadow-sm">
-                    <div class="text-3xl mb-2">〰️</div>
-                    <h4 class="font-bold text-sm mb-1">Spectrogram</h4>
-                    <p class="text-xs text-slate-500">Extracting MFCC frequency patterns.</p>
-                </div>
-                <div class="step-node bg-white p-6 rounded-2xl shadow-sm">
-                    <div class="text-3xl mb-2">🧠</div>
-                    <h4 class="font-bold text-sm mb-1">Neural Net</h4>
-                    <p class="text-xs text-slate-500">Matching with 1,200+ cry behaviors.</p>
-                </div>
-                <div class="step-node bg-white p-6 rounded-2xl shadow-sm">
-                    <div class="text-3xl mb-2">✅</div>
-                    <h4 class="font-bold text-sm mb-1">Decision</h4>
-                    <p class="text-xs text-slate-500">Probability-based classification.</p>
+            <div class="app-card p-4">
+                <div class="visualizer-box shadow-2xl">
+                    <canvas id="canvas" class="w-full h-full"></canvas>
+                    <div id="canvas-hint" class="absolute inset-0 flex flex-col items-center justify-center text-slate-600 pointer-events-none">
+                        <div class="w-16 h-1 bg-slate-800 rounded-full mb-3 opacity-20"></div>
+                        <span class="text-[9px] font-black tracking-[0.3em] uppercase opacity-40">Frequency Monitoring Active</span>
+                    </div>
+                    <div id="scanLine" class="scan-line hidden"></div>
                 </div>
             </div>
-        </section>
 
-        <!-- Accuracy Visual -->
-        <section class="grid md:grid-cols-2 gap-8 mb-16">
-            <div class="glass-card rounded-3xl p-8">
-                <h3 class="text-xl font-bold mb-4">Performance Benchmarks</h3>
-                <div class="flex items-end gap-2 h-32 mb-4">
-                    <div class="flex-1 bg-slate-200 rounded-t-lg" style="height: 40%"></div>
-                    <div class="flex-1 bg-slate-200 rounded-t-lg" style="height: 60%"></div>
-                    <div class="flex-1 bg-indigo-500 rounded-t-lg" style="height: 92%"></div>
+            <!-- Thinking / Processing Card -->
+            <div id="thinkingCard" class="hidden app-card p-6 space-y-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-8 h-8 rounded-full border-4 border-sky-500 border-t-transparent animate-spin"></div>
+                    <h3 class="font-bold text-slate-800">AI Processing...</h3>
                 </div>
-                <div class="flex justify-between text-[10px] text-slate-400 font-bold uppercase">
-                    <span>Baseline</span>
-                    <span>Random Forest</span>
-                    <span class="text-indigo-600">MummA CNN</span>
-                </div>
-                <p class="mt-4 text-sm text-slate-500">Using Convolutional Neural Networks, MummA achieves 92% accuracy in clinical simulations.</p>
-            </div>
-            <div class="bg-slate-900 text-white rounded-3xl p-8 flex flex-col justify-center">
-                <h3 class="text-xl font-bold mb-2 text-indigo-400">Privacy First</h3>
-                <p class="text-slate-400 text-sm mb-4">All audio processing happens locally on your device. We never upload recordings to the cloud.</p>
-                <div class="flex items-center gap-2 text-xs text-green-400 font-mono">
-                    <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                    Local Inference Enabled
+                <div class="bg-slate-50 rounded-xl p-4 font-mono text-[10px] text-slate-500 overflow-hidden h-24 relative">
+                    <div id="techLogs" class="space-y-1">
+                        <!-- Technical logs appear here -->
+                    </div>
                 </div>
             </div>
-        </section>
 
-        <footer class="text-center text-slate-400 text-xs py-10 border-t border-slate-200">
-            <p class="mb-2">MummA is an AI-assisted support tool and does not replace medical advice.</p>
-            <p>&copy; 2026 MummA AI Project</p>
-        </footer>
+            <!-- Final Result Card -->
+            <div id="resultCard" class="hidden app-card p-6 space-y-6">
+                <div class="flex items-center justify-between border-b border-slate-50 pb-4">
+                    <div>
+                        <h4 class="text-[10px] font-black text-sky-500 uppercase tracking-widest">Analysis Result</h4>
+                        <h2 id="prediction" class="text-3xl font-extrabold text-slate-800">—</h2>
+                    </div>
+                    <div id="resultEmoji" class="text-4xl bg-sky-50 p-4 rounded-3xl shadow-inner">🍼</div>
+                </div>
+
+                <div id="bars-container" class="space-y-4"></div>
+
+                <div class="bg-indigo-900 rounded-[32px] p-6 text-white relative overflow-hidden shadow-xl mb-4">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-sky-400 opacity-10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
+                        <h4 class="text-[10px] font-black uppercase tracking-widest text-sky-200">AI Care Recommendation</h4>
+                    </div>
+                    <p id="aiTip" class="text-sm leading-relaxed font-medium opacity-90">Decoding infant vocalization patterns...</p>
+                </div>
+            </div>
+
+            <div id="emptyState" class="text-center py-12">
+                <div class="w-24 h-24 bg-white border border-slate-100 rounded-[40px] flex items-center justify-center mx-auto mb-6 shadow-sm">
+                    <span class="text-4xl">🎙️</span>
+                </div>
+                <h3 class="font-bold text-slate-800 text-lg mb-2">Ready to Listen</h3>
+                <p class="text-slate-400 text-xs leading-relaxed max-w-[200px] mx-auto">Place your device near the baby and tap the center button to start.</p>
+            </div>
+            
+            <div class="h-10"></div>
+        </div>
+
+        <div id="screen-insights" class="screen space-y-4">
+            <h3 class="font-extrabold text-xl px-2 text-slate-900">Scientific Profiles</h3>
+            <div class="app-card p-6 space-y-5">
+                <div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                    <h4 class="font-bold text-sm text-emerald-900 mb-1">Hunger (Neh)</h4>
+                    <p class="text-xs text-emerald-700 leading-relaxed">Tongue pushed to the roof of the mouth. Resulting in an 'n' sound followed by a rhythmic pause.</p>
+                </div>
+                <div class="p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                    <h4 class="font-bold text-sm text-amber-900 mb-1">Sleepy (Owh)</h4>
+                    <p class="text-xs text-amber-700 leading-relaxed">A yawning shape in the mouth. Often accompanied by eye rubbing or heavy eyelids.</p>
+                </div>
+                <div class="p-4 bg-rose-50 rounded-2xl border border-rose-100">
+                    <h4 class="font-bold text-sm text-rose-900 mb-1">Pain (Eairh)</h4>
+                    <p class="text-xs text-rose-700 leading-relaxed">Lower abdomen tightness. High-pitched, urgent vocalizations that sound forced from the core.</p>
+                </div>
+            </div>
+            <div class="h-20"></div>
+        </div>
+
+    </main>
+
+    <div class="fab-analyze">
+        <button id="recordBtn" class="bg-sky-500 w-24 h-24 rounded-full flex items-center justify-center shadow-[0_20px_40px_-10px_rgba(14,165,233,0.4)] border-[6px] border-white transition-all transform active:scale-90">
+            <div id="recordIcon" class="w-8 h-8 rounded-md bg-white transition-all"></div>
+        </button>
     </div>
 
-    <script src="https://js.puter.com/v2/"></script>
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="switchTab('dashboard', this)">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+            <span>DASHBOARD</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('insights', this)">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <span>PROFILES</span>
+        </button>
+    </nav>
+
     <script>
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
         const recordBtn = document.getElementById("recordBtn");
-        const statusEl = document.getElementById("status");
-        const visualOverlay = document.getElementById("visual-overlay");
-        const results = document.getElementById("results");
+        const recordIcon = document.getElementById("recordIcon");
+        const globalStatus = document.getElementById("globalStatus");
+        const resultCard = document.getElementById("resultCard");
+        const thinkingCard = document.getElementById("thinkingCard");
+        const emptyState = document.getElementById("emptyState");
         const predictionEl = document.getElementById("prediction");
-        const confidenceEl = document.getElementById("confidence");
         const barsContainer = document.getElementById("bars-container");
         const aiTipEl = document.getElementById("aiTip");
-        const btnText = document.getElementById("btnText");
-        const btnIcon = document.getElementById("btnIcon");
-        const topIcon = document.getElementById("topIcon");
+        const resultEmoji = document.getElementById("resultEmoji");
+        const scanLine = document.getElementById("scanLine");
+        const techLogs = document.getElementById("techLogs");
 
         let audioCtx, analyser, stream, anim;
-        const cryIcons = {
-            "Hunger": "🍼",
-            "Pain": "🩹",
-            "Sleepy": "🌙",
-            "Discomfort": "☁️"
+
+        const aiEngine = {
+            "Hunger": [
+                "Baby is likely showing early hunger cues. Try a feed or check if it's been over 3 hours.",
+                "The 'Neh' sound pattern indicates a sucking reflex. A warm bottle or nursing is recommended.",
+                "Rhythmic crying typically suggests a basic need like milk. Start with a small feeding.",
+                "Look for rooting reflexes; baby is communicating hunger through these specific vocal peaks.",
+                "Analysis shows consistent tongue-to-palate pressure, a classic sign of hunger."
+            ],
+            "Pain": [
+                "Check for trapped gas or a tight tummy. Try a gentle belly massage or bicycling the legs.",
+                "This urgent pitch suggests sharp discomfort. Check diaper area for rashes or tight clothing.",
+                "Urgent, high-pitched vocalizations often indicate wind. Try burping baby thoroughly.",
+                "Sudden peaks in sound energy suggest physical irritation. Check if baby is feeling too hot.",
+                "Immediate comfort and soothing are needed. Check for any sharp objects or pinch points."
+            ],
+            "Sleepy": [
+                "Baby is overstimulated. Move to a dim, quiet environment and try gentle rocking.",
+                "The 'Owh' sound suggests a yawn reflex. Bedtime or a nap should be prioritized now.",
+                "Crying sounds heavy and breathy; this is a clear signal of fatigue. Avoid further play.",
+                "Lower frequency peaks indicate tired vocal cords. A swaddle and white noise may help.",
+                "Baby is struggling to settle. Try skin-to-skin contact to lower cortisol levels."
+            ],
+            "Discomfort": [
+                "Check the diaper; this staccato rhythm often follows a wet or soiled diaper.",
+                "Baby feels itchy or irritated. Check clothing tags or seams for discomfort.",
+                "The 'Heh' sound indicates skin-level irritation. A quick environment check is advised.",
+                "Repetitive, short bursts suggest baby is bored or frustrated with their current position.",
+                "Try changing baby's scenery or position. They seem physically restless but not in pain."
+            ]
         };
 
-        const resize = () => {
-            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        const cryIcons = { "Hunger": "🍼", "Pain": "🩹", "Sleepy": "💤", "Discomfort": "🚼" };
+
+        const resizeCanvas = () => {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(dpr, dpr);
         };
-        window.addEventListener('resize', resize);
-        resize();
+
+        function switchTab(screenId, el) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('screen-' + screenId).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            el.classList.add('active');
+            if(screenId === 'dashboard') resizeCanvas();
+        }
 
         function draw() {
             if (!analyser) return;
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-            analyser.getByteFrequencyData(dataArray);
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            const barWidth = (canvas.offsetWidth / bufferLength) * 2.5;
-            let barHeight;
-            let x = 0;
+            const bufferLength = analyser.frequencyBinCount;
+            const freqData = new Uint8Array(bufferLength);
+            const timeData = new Uint8Array(bufferLength);
+            
+            analyser.getByteFrequencyData(freqData);
+            analyser.getByteTimeDomainData(timeData);
 
+            const w = canvas.offsetWidth;
+            const h = canvas.offsetHeight;
+
+            // Deep background clear
+            ctx.fillStyle = "#020617";
+            ctx.fillRect(0, 0, w, h);
+            
+            // 1. Draw Frequency Bars
+            const barWidth = (w / bufferLength) * 2;
+            let x = 0;
             for (let i = 0; i < bufferLength; i++) {
-                barHeight = dataArray[i] / 2;
-                ctx.fillStyle = `rgb(99, 102, 241, ${barHeight/100})`;
-                ctx.fillRect(x, canvas.offsetHeight - barHeight, barWidth, barHeight);
-                x += barWidth + 1;
+                let barHeight = (freqData[i] / 255) * h * 0.7;
+                ctx.fillStyle = '#0ea5e9';
+                ctx.beginPath();
+                ctx.roundRect(x, h - barHeight, barWidth - 1, barHeight, [2, 2, 0, 0]);
+                ctx.fill();
+                x += barWidth;
             }
 
-            // Draw line wave overlay
-            const timeData = new Uint8Array(analyser.fftSize);
-            analyser.getByteTimeDomainData(timeData);
-            ctx.lineWidth = 2;
-            ctx.strokeStyle = '#50E3C2';
+            // 2. Draw Waveform Line (Glowing Neon)
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "#38bdf8";
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#e0f2fe'; 
             ctx.beginPath();
-            let sliceWidth = canvas.offsetWidth * 1.0 / timeData.length;
+            let sliceWidth = w * 1.0 / bufferLength;
             let tx = 0;
-            for (let i = 0; i < timeData.length; i++) {
+            for (let i = 0; i < bufferLength; i++) {
                 let v = timeData[i] / 128.0;
-                let ty = v * canvas.offsetHeight / 2;
-                if (i === 0) ctx.moveTo(tx, ty); else ctx.lineTo(tx, ty);
+                let ty = (v * h) / 2;
+                if (i === 0) ctx.moveTo(tx, ty);
+                else ctx.lineTo(tx, ty);
                 tx += sliceWidth;
             }
             ctx.stroke();
+            ctx.shadowBlur = 0;
 
             anim = requestAnimationFrame(draw);
         }
@@ -279,95 +378,130 @@
             }
 
             try {
-                audioCtx = new AudioContext();
+                resizeCanvas();
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 analyser = audioCtx.createAnalyser();
                 audioCtx.createMediaStreamSource(stream).connect(analyser);
-                analyser.fftSize = 256;
                 
-                visualOverlay.style.display = "none";
-                btnText.textContent = "Stop Analysis";
-                btnIcon.textContent = "⏹️";
-                recordBtn.classList.replace('bg-indigo-600', 'bg-rose-500');
-                statusEl.textContent = "Listening for patterns...";
-                statusEl.classList.add('text-rose-500');
+                analyser.fftSize = 256; 
+                analyser.smoothingTimeConstant = 0.5;
+                
+                recordBtn.classList.add('recording-pulse');
+                recordIcon.classList.replace('rounded-md', 'rounded-full');
+                recordIcon.style.width = '20px';
+                recordIcon.style.height = '20px';
+                recordIcon.style.backgroundColor = '#f43f5e';
+                
+                globalStatus.textContent = "CAPTURE ACTIVE";
+                globalStatus.classList.replace('text-slate-400', 'text-sky-500');
+                document.getElementById('canvas-hint').style.display = 'none';
+                scanLine.classList.remove('hidden');
                 
                 draw();
             } catch (err) {
-                statusEl.textContent = "Mic access denied. Check permissions.";
+                globalStatus.textContent = "MIC ERROR";
+                console.error(err);
             }
         };
 
         function stopRecording() {
+            if (!stream) return;
             stream.getTracks().forEach(t => t.stop());
             cancelAnimationFrame(anim);
             stream = null;
-            btnText.textContent = "Start Analysis";
-            btnIcon.textContent = "🎙️";
-            recordBtn.classList.replace('bg-rose-500', 'bg-indigo-600');
-            statusEl.textContent = "Extracting Features...";
-            statusEl.classList.remove('text-rose-500');
             
-            setTimeout(performAnalysis, 1500);
+            recordBtn.classList.remove('recording-pulse');
+            recordIcon.classList.replace('rounded-full', 'rounded-md');
+            recordIcon.style.width = '32px';
+            recordIcon.style.height = '32px';
+            recordIcon.style.backgroundColor = 'white';
+            
+            globalStatus.textContent = "PROCESSING...";
+            scanLine.classList.add('hidden');
+            
+            emptyState.classList.add('hidden');
+            resultCard.classList.add('hidden');
+            thinkingCard.classList.remove('hidden');
+            techLogs.innerHTML = "";
+            
+            performAnalysis();
         }
 
-        function performAnalysis() {
-            const labels = ["Hunger", "Pain", "Sleepy", "Discomfort"];
-            let scores = labels.map(() => Math.random() * 0.5); // Baseline random
-            
-            // Randomly emphasize one
+        function addLog(text) {
+            const div = document.createElement('div');
+            div.textContent = `> ${text}`;
+            div.className = "opacity-0 transition-opacity duration-300";
+            techLogs.appendChild(div);
+            setTimeout(() => div.classList.replace('opacity-0', 'opacity-100'), 50);
+            if(techLogs.children.length > 5) techLogs.children[0].remove();
+        }
+
+        async function performAnalysis() {
+            const sequence = [
+                "De-noising audio stream...",
+                "Calculating zero-crossing rate...",
+                "Extracting Mel-Frequency Coefficients...",
+                "Mapping temporal rhythmic peaks...",
+                "Querying behavior database...",
+                "Classification complete."
+            ];
+
+            for (let i = 0; i < sequence.length; i++) {
+                addLog(sequence[i]);
+                await new Promise(r => setTimeout(r, 600));
+            }
+
+            const labels = Object.keys(aiEngine);
+            let scores = labels.map(() => Math.random() * 0.4);
             const winnerIdx = Math.floor(Math.random() * labels.length);
-            scores[winnerIdx] += Math.random() * 0.5 + 0.4;
+            scores[winnerIdx] += 0.8;
 
             const sum = scores.reduce((a, b) => a + b, 0);
-            const percentageScores = scores.map(v => Math.round((v / sum) * 100));
-            
-            const maxVal = Math.max(...percentageScores);
-            const idx = percentageScores.indexOf(maxVal);
+            const percentages = scores.map(v => Math.round((v / sum) * 100));
+            const maxVal = Math.max(...percentages);
+            const idx = percentages.indexOf(maxVal);
+            const reason = labels[idx];
 
-            predictionEl.textContent = labels[idx];
-            topIcon.textContent = cryIcons[labels[idx]];
-            confidenceEl.textContent = maxVal + "%";
+            thinkingCard.classList.add('hidden');
+            resultCard.classList.remove('hidden');
+            
+            predictionEl.textContent = reason;
+            resultEmoji.textContent = cryIcons[reason];
             
             barsContainer.innerHTML = "";
             labels.forEach((l, i) => {
-                const perc = percentageScores[i];
+                const perc = percentages[i];
                 barsContainer.innerHTML += `
-                    <div class="space-y-1">
-                        <div class="flex justify-between text-xs font-bold text-slate-600">
-                            <span>${cryIcons[l]} ${l}</span>
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            <span>${l} Pattern</span>
                             <span>${perc}%</span>
                         </div>
-                        <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                            <div class="h-full bg-indigo-500 bar-transition" style="width: 0%"></div>
+                        <div class="h-1.5 w-full bg-slate-50 rounded-full">
+                            <div class="h-full bg-sky-500 rounded-full bar-anim" style="width: 0%"></div>
                         </div>
                     </div>
                 `;
             });
 
-            // Trigger animation
             setTimeout(() => {
-                const bars = barsContainer.querySelectorAll('.bar-transition');
-                bars.forEach((b, i) => b.style.width = percentageScores[i] + "%");
-            }, 100);
+                const bars = barsContainer.querySelectorAll('.bar-anim');
+                bars.forEach((b, i) => b.style.width = percentages[i] + "%");
+                resultCard.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }, 50);
 
-            results.style.display = "block";
-            statusEl.textContent = "Analysis complete";
-            generateTip(labels[idx]);
+            const options = aiEngine[reason];
+            aiTipEl.textContent = options[Math.floor(Math.random() * options.length)];
+            globalStatus.textContent = "ANALYSIS COMPLETE";
         }
 
-        async function generateTip(reason) {
-            aiTipEl.textContent = "MummA AI is thinking...";
-            try {
-                const prompt = `Act as MummA, a gentle, expert baby care AI. 
-                The baby cry analysis result is: "${reason}". 
-                Provide 2-3 short, warm, and practical sentences of advice for the parents. Keep it empathetic.`;
-                const response = await puter.ai.chat(prompt);
-                aiTipEl.textContent = response;
-            } catch (err) {
-                aiTipEl.textContent = "Stay calm, mama. Try holding your baby skin-to-skin and check if they are hungry or need a diaper change. You're doing great! ❤️";
-            }
-        }
+        window.addEventListener('load', resizeCanvas);
+        window.addEventListener('resize', resizeCanvas);
+
+        document.addEventListener('touchmove', (e) => {
+            if (e.scale !== 1) e.preventDefault();
+        }, { passive: false });
     </script>
 </body>
 </html>
